@@ -1,3 +1,4 @@
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
 import json
@@ -7,6 +8,7 @@ from pymongo import MongoClient
 from validators import FieldValidation
 
 
+ERROR_SERVER = 'Internal Server Error: {error}'
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 URL_SERVER = '127.0.0.1'
 PORT_SERVER = 8000
@@ -21,22 +23,31 @@ db = client[DB_NAME]
 
 class RequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        data = self.rfile.read(content_length)
-        parsed_data = parse_qs(data.decode('utf-8'))
-        form_template = find_matching_template(parsed_data)
+        try:
+            content_length = int(self.headers['Content-Length'])
+            data = self.rfile.read(content_length)
+            parsed_data = parse_qs(data.decode('utf-8'))
+            form_template = find_matching_template(parsed_data)
 
-        if form_template:
-            self.end_headers()
-            self.wfile.write(form_template['name'].encode('utf-8'))
-        else:
-            typed_fields = type_fields(parsed_data)
-            response_dict = {
-                field: field_type for field, field_type in typed_fields.items()
-            }
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(json.dumps(response_dict).encode('utf-8'))
+            if form_template:
+                self.send_response(HTTPServer.OK)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(form_template).encode('utf-8'))
+            else:
+                typed_fields = type_fields(parsed_data)
+                response_dict = {
+                    field: field_type
+                    for field, field_type in typed_fields.items()
+                }
+                self.send_response(HTTPStatus.OK)
+                self.end_headers()
+                self.wfile.write(json.dumps(response_dict).encode('utf-8'))
+        except Exception as e:
+            self.send_error(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                ERROR_SERVER.format(error=int(e))
+            )
 
 def find_matching_template(data):
     for template in db.templates.find(
