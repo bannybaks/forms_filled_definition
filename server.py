@@ -21,7 +21,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers['Content-Length'])
         data = self.rfile.read(content_length)
         parsed_data = parse_qs(data.decode('utf-8'))
-        form_template = ...    #? место вызова функции поиска шаблона в базе
+        form_template = find_matching_template(parsed_data)
 
         if form_template:
             ...    #* Вернем имя шаблона
@@ -29,7 +29,15 @@ class RequestHandler(BaseHTTPRequestHandler):
             ...    #* Вернем в виде словаря данные о полях
 
 def find_matching_template(data):
-    pass
+    for template in db.templates.find(
+        {'fields': {'$all': list(data.keys())}}
+    ):
+        if all(
+            data.get(field, [''])[0] == '' for field in template['fields']
+        ):
+            return template
+    return None
+
 
 def type_fields(data):
     pass
