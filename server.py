@@ -17,15 +17,21 @@ db = client[DB_NAME]
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):    #! Удалить после тестирования запуска сервера
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(RESPONSE_MESSAGE)
-
     def do_POST(self):
-       pass
+        content_length = int(self.headers['Content-Length'])
+        data = self.rfile.read(content_length)
+        parsed_data = parse_qs(data.decode('utf-8'))
+        form_template = ...    #? место вызова функции поиска шаблона в базе
+
+        if form_template:
+            ...    #* Вернем имя шаблона
+        else:
+            ...    #* Вернем в виде словаря данные о полях
 
 def find_matching_template(data):
+    pass
+
+def type_fields(data):
     pass
 
 def determine_field_type(value):    #! Описать валидацию полей
