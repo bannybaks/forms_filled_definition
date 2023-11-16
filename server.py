@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs
+import json
 
 from pymongo import MongoClient
 
@@ -26,9 +27,16 @@ class RequestHandler(BaseHTTPRequestHandler):
         form_template = find_matching_template(parsed_data)
 
         if form_template:
-            ...    #* Вернем имя шаблона
+            self.end_headers()
+            self.wfile.write(form_template['name'].encode('utf-8'))
         else:
-            ...    #* Вернем в виде словаря данные о полях
+            typed_fields = type_fields(parsed_data)
+            response_dict = {
+                field: field_type for field, field_type in typed_fields.items()
+            }
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(json.dumps(response_dict).encode('utf-8'))
 
 def find_matching_template(data):
     for template in db.templates.find(
