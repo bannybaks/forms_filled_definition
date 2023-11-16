@@ -3,6 +3,8 @@ from urllib.parse import parse_qs
 
 from pymongo import MongoClient
 
+from validators import FieldValidation
+
 
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 URL_SERVER = '127.0.0.1'
@@ -39,14 +41,13 @@ def find_matching_template(data):
     return None
 
 def type_fields(data, type_fields=None):
+    validators = FieldValidation()
     if type_fields is None:
         type_fields = {}
     for field, value in data.items():
-        field_type = ...    #? здесь буду вызывать валидацию
+        field_type = validators.validate_field(value[0], field)
+        type_fields[field] = field_type
     return type_fields
-
-def determine_field_type(value):    #! Валидация полей во внешнем модуле 
-    pass
 
 
 if __name__ == '__main__':
