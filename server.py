@@ -38,11 +38,14 @@ def find_matching_template(data):
             return template
     return None
 
+def type_fields(data, type_fields=None):
+    if type_fields is None:
+        type_fields = {}
+    for field, value in data.items():
+        field_type = ...    #? здесь буду вызывать валидацию
+    return type_fields
 
-def type_fields(data):
-    pass
-
-def determine_field_type(value):    #! Описать валидацию полей
+def determine_field_type(value):    #! Валидация полей во внешнем модуле 
     pass
 
 
