@@ -29,37 +29,44 @@ class RequestHandler(BaseHTTPRequestHandler):
             data = self.rfile.read(content_length)
             parsed_data = parse_qs(data.decode('utf-8'))
             form_template = find_matching_template(parsed_data)
-
             if form_template:
-                self.send_response(HTTPServer.OK)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps(form_template).encode('utf-8'))
+                self.send_success_response(form_template)
             else:
-                typed_fields_check = type_fields(parsed_data)
-                if 'error' in typed_fields_check:
-                    status_code = HTTPStatus.BAD_REQUEST.value
-                    error_message = typed_fields_check['error']
-                    self.send_response(status_code)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(
-                        json.dumps({'error': error_message}).encode('utf-8')
-                    )
-                else:
-                    status_code = HTTPStatus.OK.value
-                    self.send_response(status_code)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(
-                        json.dumps(typed_fields_check).encode('utf-8')
-                    )
+                self.send_validation_error_response(parsed_data)
         except Exception as error:
-            self.send_error(
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                ERROR_SERVER_500.format(error=error)
-            )
-    
+            self.send_server_error_response(error)
+
+    def send_response_and_headers(self, status_code):
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+
+    def send_success_response(self, response_data):
+        self.send_response_and_headers(HTTPStatus.OK)
+        self.wfile.write(json.dumps(response_data).encode('utf-8'))
+
+    def send_validation_error_response(self, parsed_data):
+        try:
+            typed_fields_check = type_fields(parsed_data)
+            if 'error' in typed_fields_check:
+                status_code = HTTPStatus.BAD_REQUEST.value
+                error_message = typed_fields_check['error']
+                self.send_response_and_headers(status_code)
+                self.wfile.write(
+                    json.dumps({'error': error_message}).encode('utf-8')
+                )
+            else:
+                status_code = HTTPStatus.OK.value
+                self.send_success_response(typed_fields_check)
+        except (ValueError, TypeError) as error:
+            self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(error))
+
+    def send_server_error_response(self, error):
+        self.send_error(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            ERROR_SERVER_500.format(error=error)
+        )
+
     @staticmethod
     def type_fields(data, type_fields=None):
         validators = FieldValidation()
