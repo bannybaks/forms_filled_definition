@@ -6,22 +6,26 @@ import json
 
 from pymongo import MongoClient
 
+import logging
 from logging_conf import configure_logger
 from validators import FieldValidation
 
-LOG_ERROR_VALIDATION = 'Data not valid! {error}'
-LOG_ERROR_SERVER = 'Oops... Server error: {error}'
-LOG_SEND_REQUESTS_AND_HEADERS = 'Sending response with status code {status_code}'
-LOG_ERROR_REQUEST = 'Error POST request {error}'
-ERROR_SERVER_500 = 'Internal server error: {error}'
-ERROR_SERVER_400 = 'Data not valid: {error}'
-RUN_SERVER_MESSAGE = 'Server is starting in port {port}'
-RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
+
 URL_SERVER = '127.0.0.1'
 PORT_SERVER = 8000
 PORT_DB = 27017
 DB_NAME = 'template_form'
 DB_CONNECT = 'mongodb://mongodb:27017/'
+LOG_ERROR_VALIDATION = 'Data not valid! {error}'
+LOG_ERROR_SERVER = 'Oops... Server error: {error}'
+LOG_SEND_REQUESTS_AND_HEADERS = (
+    'Sending response with status code {status_code}'
+)
+LOG_ERROR_REQUEST = 'Error POST request {error}'
+ERROR_SERVER_500 = 'Internal server error: {error}'
+ERROR_SERVER_400 = 'Data not valid: {error}'
+RUN_SERVER_MESSAGE = 'Server is starting in port {port_server}'
+RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 
 configure_logger()
 client = MongoClient(DB_CONNECT)
@@ -29,7 +33,16 @@ db = client[DB_NAME]
 
 
 class RequestHandler(BaseHTTPRequestHandler):
+    """Handles incoming HTTP requests.
+
+    :param BaseHTTPRequestHandler: Base class for HTTP request handlers.
+    """
     def do_POST(self) -> None:
+        """Handle POST requests.
+
+        :return: None
+        """
+
         try:
             content_length = int(self.headers['Content-Length'])
             data = self.rfile.read(content_length)
@@ -44,6 +57,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_server_error_response(error)
 
     def send_response_and_headers(self, status_code: int) -> None:
+        """Send HTTP response and headers.
+
+        :param status_code: HTTP status code.
+        :return: None
+        """
         logging.info(
             LOG_SEND_REQUESTS_AND_HEADERS.format(status_code=status_code)
         )
@@ -52,6 +70,11 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def send_success_response(self, response_data: Dict[str, Any]) -> None:
+        """Send a success response.
+
+        :param response_data: Data to be sent in the response.
+        :return: None
+        """
         self.send_response_and_headers(HTTPStatus.OK)
         self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
@@ -59,8 +82,13 @@ class RequestHandler(BaseHTTPRequestHandler):
         self,
         parsed_data: Dict[str, Any]
     ) -> None:
+        """Send a validation error response.
+
+        :param parsed_data: Parsed data from the request.
+        :return: None
+        """
         try:
-            typed_fields_check = type_fields(parsed_data)
+            typed_fields_check = self.type_fields(parsed_data)
             if 'error' in typed_fields_check:
                 status_code = HTTPStatus.BAD_REQUEST.value
                 error_message = typed_fields_check['error']
@@ -76,6 +104,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(error))
 
     def send_server_error_response(self, error: Exception) -> None:
+        """Send a server error response.
+
+        :param error: The exception that caused the server error.
+        :return: None
+        """
         logging.error(LOG_ERROR_SERVER.format(error=error))
         self.send_error(
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -85,8 +118,14 @@ class RequestHandler(BaseHTTPRequestHandler):
     @staticmethod
     def type_fields(
         data: Dict[str, Any],
-        type_fields: Optional[Dict[str, Any]]=None
+        type_fields: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
+        """Validate and type-check fields.
+
+        :param data: The data to be validated and typed.
+        :param type_fields: A dictionary to store the types of each field.
+        :return: A dictionary containing the types of each field.
+        """
         validators = FieldValidation()
         try:
             if type_fields is None:
@@ -104,6 +143,11 @@ class RequestHandler(BaseHTTPRequestHandler):
 def find_matching_template(
     data: Dict[str, Any]
 ) -> Optional[Dict[str, Any]]:
+    """Find a matching template based on the provided data.
+
+    :param data: The data to find a matching template for.
+    :return: A matching template or None if no match is found.
+    """
     for template in db.templates.find(
         {'fields': {'$all': list(data.keys())}}
     ):
