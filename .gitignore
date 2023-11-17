@@ -150,3 +150,8 @@ cython_debug/
 # PyCharm
 .idea/
 
+# Databases
+*.db
+
+# Docker
+docker-compose.override.yml
