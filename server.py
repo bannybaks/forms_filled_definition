@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qs
 import json
 
@@ -14,6 +15,7 @@ LOG_SEND_REQUESTS_AND_HEADERS = 'Sending response with status code {status_code}
 LOG_ERROR_REQUEST = 'Error POST request {error}'
 ERROR_SERVER_500 = 'Internal server error: {error}'
 ERROR_SERVER_400 = 'Data not valid: {error}'
+RUN_SERVER_MESSAGE = 'Server is starting in port {port}'
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 URL_SERVER = '127.0.0.1'
 PORT_SERVER = 8000
@@ -27,7 +29,7 @@ db = client[DB_NAME]
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-    def do_POST(self):
+    def do_POST(self) -> None:
         try:
             content_length = int(self.headers['Content-Length'])
             data = self.rfile.read(content_length)
@@ -41,7 +43,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             logging.error(LOG_ERROR_REQUEST.format(error=error))
             self.send_server_error_response(error)
 
-    def send_response_and_headers(self, status_code):
+    def send_response_and_headers(self, status_code: int) -> None:
         logging.info(
             LOG_SEND_REQUESTS_AND_HEADERS.format(status_code=status_code)
         )
@@ -49,11 +51,14 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
 
-    def send_success_response(self, response_data):
+    def send_success_response(self, response_data: Dict[str, Any]) -> None:
         self.send_response_and_headers(HTTPStatus.OK)
         self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
-    def send_validation_error_response(self, parsed_data):
+    def send_validation_error_response(
+        self,
+        parsed_data: Dict[str, Any]
+    ) -> None:
         try:
             typed_fields_check = type_fields(parsed_data)
             if 'error' in typed_fields_check:
@@ -70,7 +75,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             logging.error(LOG_ERROR_VALIDATION.format(error=error))
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(error))
 
-    def send_server_error_response(self, error):
+    def send_server_error_response(self, error: Exception) -> None:
         logging.error(LOG_ERROR_SERVER.format(error=error))
         self.send_error(
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -78,7 +83,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         )
 
     @staticmethod
-    def type_fields(data, type_fields=None):
+    def type_fields(
+        data: Dict[str, Any],
+        type_fields: Optional[Dict[str, Any]]=None
+    ) -> Dict[str, Any]:
         validators = FieldValidation()
         try:
             if type_fields is None:
@@ -93,7 +101,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             return {'error': ERROR_SERVER_500.format(error=error)}
 
 
-def find_matching_template(data):
+def find_matching_template(
+    data: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
     for template in db.templates.find(
         {'fields': {'$all': list(data.keys())}}
     ):
@@ -107,5 +117,5 @@ def find_matching_template(data):
 if __name__ == '__main__':
     server_destination = (URL_SERVER, PORT_SERVER)
     httpd = HTTPServer(server_destination, RequestHandler)
-    print(f'Server is starting in port {PORT_SERVER}')
+    print(RUN_SERVER_MESSAGE.format(port_server=PORT_SERVER))
     httpd.serve_forever()
