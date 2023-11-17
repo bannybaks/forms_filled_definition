@@ -8,7 +8,8 @@ from pymongo import MongoClient
 from validators import FieldValidation
 
 
-ERROR_SERVER = 'Internal Server Error: {error}'
+ERROR_SERVER_500 = 'Internal server error: {error}'
+ERROR_SERVER_400 = 'Data not valid: {error}'
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 URL_SERVER = '127.0.0.1'
 PORT_SERVER = 8000
@@ -35,19 +36,45 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps(form_template).encode('utf-8'))
             else:
-                typed_fields = type_fields(parsed_data)
-                response_dict = {
-                    field: field_type
-                    for field, field_type in typed_fields.items()
-                }
-                self.send_response(HTTPStatus.OK)
-                self.end_headers()
-                self.wfile.write(json.dumps(response_dict).encode('utf-8'))
-        except Exception as e:
+                typed_fields_check = type_fields(parsed_data)
+                if 'error' in typed_fields_check:
+                    status_code = HTTPStatus.BAD_REQUEST.value
+                    error_message = typed_fields_check['error']
+                    self.send_response(status_code)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(
+                        json.dumps({'error': error_message}).encode('utf-8')
+                    )
+                else:
+                    status_code = HTTPStatus.OK.value
+                    self.send_response(status_code)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(
+                        json.dumps(typed_fields_check).encode('utf-8')
+                    )
+        except Exception as error:
             self.send_error(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                ERROR_SERVER.format(error=int(e))
+                ERROR_SERVER_500.format(error=error)
             )
+    
+    @staticmethod
+    def type_fields(data, type_fields=None):
+        validators = FieldValidation()
+        try:
+            if type_fields is None:
+                type_fields = {}
+            for field, value in data.items():
+                field_type = validators.validate_field(value[0], field)
+                type_fields[field] = field_type
+            return type_fields
+        except ValueError as error:
+            return {'error': ERROR_SERVER_400.format(error=error)}
+        except Exception as error:
+            return {'error': ERROR_SERVER_500.format(error=error)}
+
 
 def find_matching_template(data):
     for template in db.templates.find(
@@ -58,15 +85,6 @@ def find_matching_template(data):
         ):
             return template
     return None
-
-def type_fields(data, type_fields=None):
-    validators = FieldValidation()
-    if type_fields is None:
-        type_fields = {}
-    for field, value in data.items():
-        field_type = validators.validate_field(value[0], field)
-        type_fields[field] = field_type
-    return type_fields
 
 
 if __name__ == '__main__':
