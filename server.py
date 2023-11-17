@@ -6,6 +6,7 @@ import json
 
 from pymongo import MongoClient
 
+from database import db_config
 import logging
 from logging_conf import configure_logger
 from validators import FieldValidation
@@ -28,8 +29,7 @@ RUN_SERVER_MESSAGE = 'Server is starting in port {port_server}'
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
 
 configure_logger()
-client = MongoClient(DB_CONNECT)
-db = client[DB_NAME]
+db = db_config.get_db()
 
 
 class RequestHandler(BaseHTTPRequestHandler):
