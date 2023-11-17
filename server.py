@@ -5,9 +5,13 @@ import json
 
 from pymongo import MongoClient
 
+from logging_conf import configure_logger
 from validators import FieldValidation
 
-
+LOG_ERROR_VALIDATION = 'Data not valid! {error}'
+LOG_ERROR_SERVER = 'Oops... Server error: {error}'
+LOG_SEND_REQUESTS_AND_HEADERS = 'Sending response with status code {status_code}'
+LOG_ERROR_REQUEST = 'Error POST request {error}'
 ERROR_SERVER_500 = 'Internal server error: {error}'
 ERROR_SERVER_400 = 'Data not valid: {error}'
 RESPONSE_MESSAGE = b'The server is running. GET request processed successfully'
@@ -17,7 +21,7 @@ PORT_DB = 27017
 DB_NAME = 'template_form'
 DB_CONNECT = 'mongodb://mongodb:27017/'
 
-
+configure_logger()
 client = MongoClient(DB_CONNECT)
 db = client[DB_NAME]
 
@@ -34,9 +38,13 @@ class RequestHandler(BaseHTTPRequestHandler):
             else:
                 self.send_validation_error_response(parsed_data)
         except Exception as error:
+            logging.error(LOG_ERROR_REQUEST.format(error=error))
             self.send_server_error_response(error)
 
     def send_response_and_headers(self, status_code):
+        logging.info(
+            LOG_SEND_REQUESTS_AND_HEADERS.format(status_code=status_code)
+        )
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()
@@ -59,9 +67,11 @@ class RequestHandler(BaseHTTPRequestHandler):
                 status_code = HTTPStatus.OK.value
                 self.send_success_response(typed_fields_check)
         except (ValueError, TypeError) as error:
+            logging.error(LOG_ERROR_VALIDATION.format(error=error))
             self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(error))
 
     def send_server_error_response(self, error):
+        logging.error(LOG_ERROR_SERVER.format(error=error))
         self.send_error(
             HTTPStatus.INTERNAL_SERVER_ERROR,
             ERROR_SERVER_500.format(error=error)
