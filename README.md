@@ -1,6 +1,14 @@
 ##  Тестовое задание от LeadHit на позицию Junior Python Developer
 
 ###  Forms Filled Definition Web App.
+
+[![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-2.0-green.svg)](https://flask.palletsprojects.com/en/2.0.x/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-5.0-brightgreen.svg)](https://www.mongodb.com/)
+[![PyMongo](https://img.shields.io/badge/PyMongo-3.12-brightgreen.svg)](https://pymongo.readthedocs.io/en/stable/)
+[![Docker](https://img.shields.io/badge/Docker-Latest-blue.svg)](https://www.docker.com/)
+[![Requests](https://img.shields.io/badge/Requests-2.26-orange.svg)](https://docs.python-requests.org/en/latest/)
+
 ####  Описание:
 *Функционал*:<br>
 	- Поиск шаблона формы по входным данным.<br>		 	
