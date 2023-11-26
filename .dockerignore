@@ -1,6 +1,0 @@
-venv/
-__pycache__/
-.docker/
-.dockerignore
-.git/
-test_templates/

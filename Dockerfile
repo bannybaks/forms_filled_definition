@@ -1,5 +1,4 @@
 FROM python:3.10-slim
-ENV PYTHONUNBUFFERED 1
 
 RUN useradd -m -r -u 100 user
 
@@ -16,4 +15,6 @@ RUN chown -R user:user /app
 
 USER user
 
-CMD [ "bash", "-c" "python filling_database.py && python server.py" ]
+EXPOSE 5000
+
+CMD ["bash", "-c", "python ./db/filling_database.py && flask run --debug -h '0.0.0.0'"]
