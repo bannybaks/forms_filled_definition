@@ -2,7 +2,7 @@
 
 ###  Forms Filled Definition Web App.
 
-[![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.0-green.svg)](https://flask.palletsprojects.com/en/2.0.x/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-5.0-brightgreen.svg)](https://www.mongodb.com/)
 [![PyMongo](https://img.shields.io/badge/PyMongo-3.12-brightgreen.svg)](https://pymongo.readthedocs.io/en/stable/)
